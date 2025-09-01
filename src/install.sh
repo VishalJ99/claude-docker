@@ -65,6 +65,55 @@ fi
 chmod +x "$PROJECT_ROOT/src/claude-docker.sh"
 chmod +x "$PROJECT_ROOT/src/startup.sh"
 
+# Check for GPU support
+echo ""
+echo "Checking GPU support..."
+
+# Check if running with admin privileges
+if [ "$EUID" -eq 0 ]; then
+    echo "✓ Running with admin privileges"
+    
+    # Check if NVIDIA drivers are installed
+    if command -v nvidia-smi &> /dev/null; then
+        echo "✓ NVIDIA drivers detected"
+        
+        # Check if Docker has GPU support
+        if docker info 2>/dev/null | grep -q nvidia; then
+            echo "✓ Docker GPU support already installed"
+        else
+            echo "⚠️  Docker GPU support not found"
+            echo "Installing NVIDIA Container Toolkit..."
+            
+            # Install without sudo (we're already root)
+            distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+            curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+                gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+            curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+                sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+                tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null
+            apt-get update -qq
+            apt-get install -y -qq nvidia-container-toolkit
+            nvidia-ctk runtime configure --runtime=docker > /dev/null
+            systemctl restart docker
+            echo "✓ NVIDIA Container Toolkit installed"
+        fi
+    else
+        echo "ℹ️  No NVIDIA GPU detected - skipping GPU support"
+    fi
+else
+    echo "ℹ️  Not running as root - skipping GPU installation"
+    echo "   To install GPU support, run: sudo $0"
+    
+    # Still check status for informational purposes
+    if command -v nvidia-smi &> /dev/null; then
+        if docker info 2>/dev/null | grep -q nvidia; then
+            echo "   ✓ GPU support appears to be already installed"
+        else
+            echo "   ⚠️  GPU detected but Docker GPU support not installed"
+        fi
+    fi
+fi
+
 echo ""
 echo "Installation complete! 🎉"
 echo ""

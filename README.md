@@ -31,8 +31,8 @@ cd claude-docker
 cp .env.example .env
 nano .env  # Add your API keys (see below)
 
-# 3. Install
-./src/install.sh
+# 3. Install (use sudo for GPU support)
+sudo ./src/install.sh  # Or just ./src/install.sh without GPU
 
 # 4. Run from any project
 cd ~/your-project
@@ -81,6 +81,21 @@ claude-docker --rebuild
 # Use GPU for ML tasks
 claude-docker --gpus all
 ```
+
+## Installation Notes
+
+### Why Use Sudo for Installation?
+
+The install script can be run with or without `sudo`:
+
+- **With `sudo` (recommended for GPU users)**: Automatically installs NVIDIA Container Toolkit if you have an NVIDIA GPU, enabling GPU passthrough to Docker containers
+- **Without `sudo`**: Performs all setup except GPU support installation
+
+**GPU Support Details:**
+- If you have an NVIDIA GPU and want to use it in containers (e.g., for ML/AI tasks), run the install script with `sudo`
+- The script will detect your GPU and install the NVIDIA Container Toolkit, which allows Docker to access your GPU
+- This is a one-time system-level installation that requires admin privileges
+- If you don't need GPU support or don't have an NVIDIA GPU, you can run the script without `sudo`
 
 ## Prerequisites
 

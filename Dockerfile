@@ -1,16 +1,35 @@
 # ABOUTME: Docker image for Claude Code with Twilio MCP server
 # ABOUTME: Provides autonomous Claude Code environment with SMS notifications
 
-FROM node:20-slim
+FROM ubuntu:22.04
 
-# Install required system dependencies
+# Set DEBIAN_FRONTEND to avoid interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Node.js and required system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
+    wget \
     python3 \
+    python3-pip \
     build-essential \
     sudo \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+# Set NVIDIA environment variables for GPU support
+# These are harmless when GPU is not available but enable GPU passthrough when --gpus flag is used
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
 
 # Install uv (Astral) for Serena MCP (todo make this modular.)
 # Note: Will be installed for claude-user after user creation
