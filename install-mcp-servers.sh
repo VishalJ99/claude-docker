@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+trap 'echo "$0: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 # ABOUTME: Installs MCP servers from mcp-servers.txt with environment variable substitution
 # ABOUTME: Reads commands from file, substitutes env vars, and executes each MCP installation
 

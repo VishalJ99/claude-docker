@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+trap 'echo "$0: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 # ABOUTME: Installation script for claude-docker
 # ABOUTME: Creates claude-docker/claude-home directory at home, copies .env.example to .env,
 # ABOUTME: adds claude-docker alias to .zshrc, makes scripts executable.
