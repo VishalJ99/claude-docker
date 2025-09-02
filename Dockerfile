@@ -42,7 +42,6 @@ WORKDIR /app
 
 # Install Claude Code globally
 RUN npm install -g @anthropic-ai/claude-code
-RUN npm install -g @railway/cli
 
 # Ensure npm global bin is in PATH
 ENV PATH="/usr/local/bin:${PATH}"
