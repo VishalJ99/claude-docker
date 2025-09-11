@@ -5,6 +5,7 @@ trap 'echo "$0: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 # ABOUTME: Handles project mounting, .claude setup, and environment variables
 
 # Parse command line arguments
+DOCKER="${DOCKER:-docker}"
 NO_CACHE=""
 FORCE_REBUILD=false
 CONTINUE_FLAG=""
@@ -14,6 +15,10 @@ ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --podman)
+            DOCKER=podman
+            shift
+            ;;
         --no-cache)
             NO_CACHE="--no-cache"
             shift
@@ -90,7 +95,7 @@ fi
 # Check if we need to rebuild the image
 NEED_REBUILD=false
 
-if ! docker images | grep -q "claude-docker"; then
+if ! "$DOCKER" images | grep -q "claude-docker"; then
     echo "Building Claude Docker image for first time..."
     NEED_REBUILD=true
 fi
@@ -125,7 +130,7 @@ if [ "$NEED_REBUILD" = true ]; then
         BUILD_ARGS="$BUILD_ARGS --build-arg SYSTEM_PACKAGES=\"$SYSTEM_PACKAGES\""
     fi
     
-    eval "docker build $NO_CACHE $BUILD_ARGS -t claude-docker:latest \"$PROJECT_ROOT\""
+    eval "'$DOCKER' build $NO_CACHE $BUILD_ARGS -t claude-docker:latest \"$PROJECT_ROOT\""
     
     # Clean up copied auth files
     rm -f "$PROJECT_ROOT/.claude.json"
@@ -200,7 +205,7 @@ fi
 # Add GPU access if specified
 if [ -n "${GPU_ACCESS:-}" ]; then
     # Check if nvidia-docker2 or nvidia-container-runtime is available
-    if docker info 2>/dev/null | grep -q nvidia || which nvidia-docker >/dev/null 2>&1; then
+    if "$DOCKER" info 2>/dev/null | grep -q nvidia || which nvidia-docker >/dev/null 2>&1; then
         echo "✓ Enabling GPU access: $GPU_ACCESS"
         DOCKER_OPTS="$DOCKER_OPTS --gpus $GPU_ACCESS"
     else
@@ -264,7 +269,7 @@ fi
 
 # Run Claude Code in Docker
 echo "Starting Claude Code in Docker..."
-docker run -it --rm \
+"$DOCKER" run -it --rm \
     $DOCKER_OPTS \
     -v "$CURRENT_DIR:/workspace" \
     -v "$HOME/.claude-docker/claude-home:/home/claude-user/.claude:rw" \

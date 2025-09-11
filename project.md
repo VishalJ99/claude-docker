@@ -6,6 +6,7 @@ The `claude-docker.sh` script provides a comprehensive wrapper for running Claud
 ## Core Components
 
 ### 1. Command Line Arguments
+- `--podman`: Use Podman instead of Docker (can set path to docker/podman with DOCKER env var)
 - `--no-cache`: Skip Docker build cache
 - `--rebuild`: Force image rebuild
 - `--continue`: Pass continue flag to Claude

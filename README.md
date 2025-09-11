@@ -38,6 +38,9 @@ nano .env  # Add your API keys (see below)
 cd ~/your-project
 claude-docker
 
+# Optional: use `claude-docker --podman` or `DOCKER=podman claude-docker`
+# to use podman instead of docker.
+#
 # Optional: Set up SSH keys for git push (see Prerequisites section)
 # The script will show setup instructions if keys are missing
 ```
@@ -48,6 +51,7 @@ Claude Docker supports several command-line flags for different use cases:
 ### Basic Usage
 ```bash
 claude-docker                    # Start Claude in current directory
+claude-docker --podman           # Use podman instead of docker to run containers
 claude-docker --continue         # Resume previous conversation in this directory
 claude-docker --rebuild          # Force rebuild Docker image
 claude-docker --rebuild --no-cache  # Rebuild without using Docker cache
@@ -57,6 +61,7 @@ claude-docker --rebuild --no-cache  # Rebuild without using Docker cache
 
 | Flag | Description | Example |
 |------|-------------|---------|
+| `--podman` | Use podman in place of docker | `claude-docker --podman` |
 | `--continue` | Resume the previous conversation in current directory | `claude-docker --continue` |
 | `--rebuild` | Force rebuild of the Docker image | `claude-docker --rebuild` |
 | `--no-cache` | When rebuilding, don't use Docker cache | `claude-docker --rebuild --no-cache` |
