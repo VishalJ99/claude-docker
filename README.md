@@ -201,6 +201,29 @@ Claude Docker works seamlessly on Windows via WSL (Windows Subsystem for Linux):
    - Go to Settings → Resources → WSL Integration
    - Enable integration with your WSL distribution (e.g., Ubuntu)
 
+4. **Claude Code Authentication**:
+   You can authenticate Claude Code in either Windows OR WSL - the script automatically detects both:
+
+   **Option A: Authenticate in Windows (Recommended)**
+   ```powershell
+   # In Windows PowerShell
+   npm install -g @anthropic-ai/claude-code
+   claude
+   # Complete authentication
+   ```
+
+   **Option B: Authenticate in WSL**
+   ```bash
+   # In WSL terminal
+   npm install -g @anthropic-ai/claude-code
+   claude
+   # Complete authentication
+   ```
+
+   The claude-docker script will automatically find your `.claude.json` in either:
+   - WSL home: `/home/username/.claude.json`
+   - Windows home: `/mnt/c/Users/WindowsUsername/.claude.json`
+
 ### Installation on WSL
 Once WSL and Docker Desktop are configured, open your WSL terminal (e.g., Ubuntu) and follow the normal installation steps:
 
@@ -258,6 +281,20 @@ claude-docker
   ```
 
 ### Troubleshooting WSL
+
+**Issue: ".claude.json does not exist"**
+- The script checks both WSL and Windows home directories automatically
+- If you authenticated Claude Code on Windows, the script will find it at `/mnt/c/Users/YourName/.claude.json`
+- If you authenticated in WSL, it will find it at `/home/yourname/.claude.json`
+- To verify where your authentication is:
+  ```bash
+  # Check WSL location
+  ls -la ~/.claude.json ~/.claude/.credentials.json
+
+  # Check Windows location (adjust username)
+  ls -la /mnt/c/Users/*/'.claude.json' /mnt/c/Users/*/.claude/.credentials.json
+  ```
+- If neither exists, authenticate Claude Code first (see Prerequisites)
 
 **Issue: "docker: command not found"**
 - Ensure Docker Desktop is running

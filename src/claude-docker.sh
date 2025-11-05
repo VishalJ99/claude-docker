@@ -51,6 +51,27 @@ CURRENT_DIR=$(pwd)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Detect if running in WSL and find Windows home directory
+WINDOWS_HOME=""
+if grep -qi microsoft /proc/version 2>/dev/null || grep -qi wsl /proc/version 2>/dev/null; then
+    # We're in WSL - try to find Windows username
+    # First check WSLENV or common Windows environment variables
+    if [ -n "${USERPROFILE:-}" ]; then
+        # USERPROFILE is set (e.g., C:\Users\Username)
+        WINDOWS_USER=$(basename "$USERPROFILE")
+        WINDOWS_HOME="/mnt/c/Users/$WINDOWS_USER"
+    elif [ -d "/mnt/c/Users" ]; then
+        # Try to find the most recently modified user directory (likely the active user)
+        WINDOWS_USER=$(ls -t /mnt/c/Users | grep -v "^Public$\|^Default$\|^All Users$" | head -n1)
+        if [ -n "$WINDOWS_USER" ]; then
+            WINDOWS_HOME="/mnt/c/Users/$WINDOWS_USER"
+        fi
+    fi
+    if [ -n "$WINDOWS_HOME" ]; then
+        echo "✓ WSL detected - Windows home: $WINDOWS_HOME"
+    fi
+fi
+
 # Check if .claude directory exists in current project, create if not
 if [ ! -d "$CURRENT_DIR/.claude" ]; then
     echo "Creating .claude directory for this project..."
@@ -112,10 +133,27 @@ fi
 
 if [ "$NEED_REBUILD" = true ]; then
     # Copy authentication files to build context
+    # Check both WSL home and Windows home (if in WSL)
+    CLAUDE_JSON_PATH=""
     if [ -f "$HOME/.claude.json" ]; then
-        cp "$HOME/.claude.json" "$PROJECT_ROOT/.claude.json"
+        CLAUDE_JSON_PATH="$HOME/.claude.json"
+        echo "✓ Found Claude authentication in WSL home"
+    elif [ -n "$WINDOWS_HOME" ] && [ -f "$WINDOWS_HOME/.claude.json" ]; then
+        CLAUDE_JSON_PATH="$WINDOWS_HOME/.claude.json"
+        echo "✓ Found Claude authentication in Windows home"
     fi
-    
+
+    if [ -n "$CLAUDE_JSON_PATH" ]; then
+        cp "$CLAUDE_JSON_PATH" "$PROJECT_ROOT/.claude.json"
+    else
+        echo "⚠️  No .claude.json found. Claude Code authentication required."
+        if [ -n "$WINDOWS_HOME" ]; then
+            echo "   Checked: $HOME/.claude.json and $WINDOWS_HOME/.claude.json"
+        else
+            echo "   Checked: $HOME/.claude.json"
+        fi
+    fi
+
     # Get git config from host
     GIT_USER_NAME=$(git config --global --get user.name 2>/dev/null || echo "")
     GIT_USER_EMAIL=$(git config --global --get user.email 2>/dev/null || echo "")
@@ -141,9 +179,19 @@ mkdir -p "$HOME/.claude-docker/claude-home"
 mkdir -p "$HOME/.claude-docker/ssh"
 
 # Copy authentication files to persistent claude-home if they don't exist
-if [ -f "$HOME/.claude/.credentials.json" ] && [ ! -f "$HOME/.claude-docker/claude-home/.credentials.json" ]; then
-    echo "✓ Copying Claude authentication to persistent directory"
-    cp "$HOME/.claude/.credentials.json" "$HOME/.claude-docker/claude-home/.credentials.json"
+# Check both WSL home and Windows home (if in WSL)
+if [ ! -f "$HOME/.claude-docker/claude-home/.credentials.json" ]; then
+    CREDENTIALS_PATH=""
+    if [ -f "$HOME/.claude/.credentials.json" ]; then
+        CREDENTIALS_PATH="$HOME/.claude/.credentials.json"
+    elif [ -n "$WINDOWS_HOME" ] && [ -f "$WINDOWS_HOME/.claude/.credentials.json" ]; then
+        CREDENTIALS_PATH="$WINDOWS_HOME/.claude/.credentials.json"
+    fi
+
+    if [ -n "$CREDENTIALS_PATH" ]; then
+        echo "✓ Copying Claude credentials to persistent directory"
+        cp "$CREDENTIALS_PATH" "$HOME/.claude-docker/claude-home/.credentials.json"
+    fi
 fi
 
 # Log information about persistent Claude home directory
