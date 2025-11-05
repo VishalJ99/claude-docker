@@ -20,8 +20,11 @@ This is a complete starter pack for autonomous AI development.
 - **Fully customizable** - Modify the can modify the files at `~/.claude-docker` for custom slash commands, settings and claude.md files.
 
 ## Quick Start
+
+**Note**: Works on Linux, macOS, and Windows (via WSL2). See [WSL/Windows Support](#wslwindows-support) for Windows-specific instructions.
+
 ```bash
-# 0. Assumes you claude-code and docker already installed.
+# 0. Assumes you have claude-code and docker already installed.
 
 # 1. Clone and enter directory
 git clone https://github.com/VishalJ99/claude-docker.git
@@ -163,7 +166,7 @@ The Docker container needs your existing Claude authentication to function. This
 ```bash
 # SMS notifications (highly recommended!)
 # Perfect for long-running tasks - step away and get notified when done
-TWILIO_ACCOUNT_SID=your_twilio_sid  
+TWILIO_ACCOUNT_SID=your_twilio_sid
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_FROM_NUMBER=+1234567890
 TWILIO_TO_NUMBER=+0987654321
@@ -177,6 +180,97 @@ SYSTEM_PACKAGES="libopenslide0 libgdal-dev"
 ```
 
 ⚠️ **Security Note**: Credentials are baked into the Docker image. Keep your image secure!
+
+## WSL/Windows Support
+
+Claude Docker works seamlessly on Windows via WSL (Windows Subsystem for Linux):
+
+### Prerequisites for Windows
+1. **Install WSL2** (Ubuntu recommended):
+   ```powershell
+   # Run in PowerShell as Administrator
+   wsl --install
+   ```
+
+2. **Install Docker Desktop for Windows**:
+   - Download from https://docs.docker.com/desktop/install/windows-install/
+   - Enable WSL2 backend in Docker Desktop settings
+   - Ensure "Use the WSL 2 based engine" is checked
+
+3. **Configure Docker Desktop**:
+   - Go to Settings → Resources → WSL Integration
+   - Enable integration with your WSL distribution (e.g., Ubuntu)
+
+### Installation on WSL
+Once WSL and Docker Desktop are configured, open your WSL terminal (e.g., Ubuntu) and follow the normal installation steps:
+
+```bash
+# Clone repository (in WSL terminal)
+git clone https://github.com/VishalJ99/claude-docker.git
+cd claude-docker
+
+# Setup environment
+cp .env.example .env
+nano .env  # Add your API keys
+
+# Install
+./src/install.sh
+
+# Run from any project
+cd ~/your-project
+claude-docker
+```
+
+### Important Notes for WSL Users
+
+**Path Handling:**
+- All paths are automatically Unix-style in WSL (`/home/user/project` or `/mnt/c/Users/user/project`)
+- Docker Desktop WSL2 backend handles volume mounts transparently
+- Works from both WSL home directory (`/home/user/`) and Windows paths (`/mnt/c/Users/user/`)
+
+**Git Configuration:**
+- Configure git inside WSL (not Windows git):
+  ```bash
+  git config --global user.name "Your Name"
+  git config --global user.email "your.email@example.com"
+  ```
+
+**Line Endings:**
+- This repository enforces Unix line endings (LF) via `.gitattributes`
+- No manual configuration needed - scripts will work correctly
+
+**Conda Integration:**
+- If Conda is installed on Windows, use the WSL path in `.env`:
+  ```bash
+  # Example: Windows Conda at C:\ProgramData\Miniconda3
+  CONDA_PREFIX=/mnt/c/ProgramData/Miniconda3
+  ```
+- If Conda is installed in WSL, use the WSL path:
+  ```bash
+  CONDA_PREFIX=/home/user/miniconda3
+  ```
+
+**SSH Keys:**
+- Generate SSH keys inside WSL (not Windows):
+  ```bash
+  mkdir -p ~/.claude-docker/ssh
+  ssh-keygen -t rsa -b 4096 -f ~/.claude-docker/ssh/id_rsa -N ''
+  ```
+
+### Troubleshooting WSL
+
+**Issue: "docker: command not found"**
+- Ensure Docker Desktop is running
+- Check WSL Integration is enabled in Docker Desktop settings
+- Restart WSL: `wsl --shutdown` (in PowerShell), then reopen
+
+**Issue: Permission denied on scripts**
+- Ensure repository was cloned in WSL (not Windows filesystem)
+- Check file permissions: `chmod +x src/*.sh`
+
+**Issue: Slow performance**
+- Store your projects in WSL filesystem (`/home/user/`) not Windows (`/mnt/c/`)
+- WSL2 has significantly better I/O performance on native filesystem
 
 ## Features
 

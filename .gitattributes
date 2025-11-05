@@ -1,0 +1,27 @@
+# Enforce Unix-style line endings (LF) for shell scripts and key files
+# This ensures WSL/Linux compatibility when cloned on Windows
+
+# Shell scripts
+*.sh text eol=lf
+
+# Docker files
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+
+# Python files
+*.py text eol=lf
+
+# Configuration files
+.env* text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Force binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.tar binary
+*.gz binary
