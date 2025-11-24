@@ -3,20 +3,13 @@ set -euo pipefail
 trap 'echo "$0: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 # ABOUTME: Installation script for claude-docker
 # ABOUTME: Creates claude-docker/claude-home directory at home, copies .env.example to .env,
-# ABOUTME: adds claude-docker alias to .zshrc, makes scripts executable.
+# ABOUTME: adds claude-docker alias to .zshrc.
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Create claude persistence directory
 mkdir -p "$HOME/.claude-docker/claude-home"
-
-# Create scripts directory
-mkdir -p "$HOME/.claude-docker/scripts"
-
-# Copy template scripts
-echo "✓ Copying template scripts to persistent directory"
-cp -r "$PROJECT_ROOT/scripts/"* "$HOME/.claude-docker/scripts/"
 
 # Copy template .claude contents to persistent directory
 echo "✓ Copying template Claude configuration to persistent directory"
@@ -39,28 +32,6 @@ if ! grep -q "alias claude-docker=" "$HOME/.zshrc"; then
     echo "✓ Added 'claude-docker' alias to .zshrc"
 else
     echo "✓ Claude-docker alias already exists in .zshrc"
-fi
-
-# Add scripts directory to PATH and PYTHONPATH in .bashrc
-if grep -q "/.claude-docker/scripts" "$HOME/.bashrc"; then
-    echo "✓ Scripts directory already in .bashrc PATH/PYTHONPATH"
-else
-    echo "" >> "$HOME/.bashrc"
-    echo "# Claude Docker scripts directory" >> "$HOME/.bashrc"
-    echo "export PATH=\"\$HOME/.claude-docker/scripts:\$PATH\"" >> "$HOME/.bashrc"
-    echo "export PYTHONPATH=\"\$HOME/.claude-docker/scripts:\$PYTHONPATH\"" >> "$HOME/.bashrc"
-    echo "✓ Added scripts directory to .bashrc PATH/PYTHONPATH"
-fi
-
-# Add scripts directory to PATH and PYTHONPATH in .zshrc
-if grep -q "/.claude-docker/scripts" "$HOME/.zshrc"; then
-    echo "✓ Scripts directory already in .zshrc PATH/PYTHONPATH"
-else
-    echo "" >> "$HOME/.zshrc"
-    echo "# Claude Docker scripts directory" >> "$HOME/.zshrc"
-    echo "export PATH=\"\$HOME/.claude-docker/scripts:\$PATH\"" >> "$HOME/.zshrc"
-    echo "export PYTHONPATH=\"\$HOME/.claude-docker/scripts:\$PYTHONPATH\"" >> "$HOME/.zshrc"
-    echo "✓ Added scripts directory to .zshrc PATH/PYTHONPATH"
 fi
 
 # Make scripts executable

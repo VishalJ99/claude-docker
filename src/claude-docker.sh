@@ -274,7 +274,6 @@ echo "Starting Claude Code in Docker..."
     -v "$CURRENT_DIR:/workspace" \
     -v "$HOME/.claude-docker/claude-home:/home/claude-user/.claude:rw" \
     -v "$HOME/.claude-docker/ssh:/home/claude-user/.ssh:rw" \
-    -v "$HOME/.claude-docker/scripts:/home/claude-user/scripts:rw" \
     $MOUNT_ARGS \
     $ENV_ARGS \
     -e CLAUDE_CONTINUE_FLAG="$CONTINUE_FLAG" \

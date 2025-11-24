@@ -1,7 +1,8 @@
 {
   "env": {
     "BASH_DEFAULT_TIMEOUT_MS": "86400000",
-    "BASH_MAX_TIMEOUT_MS": "86400000"
+    "BASH_MAX_TIMEOUT_MS": "86400000",
+    "MCP_TIMEOUT_MS": "60000"
   },
   "includeCoAuthoredBy": false,
   "permissions": {
@@ -13,6 +14,5 @@
       "Bash(awk:*)",
       "Bash(sed:*)"
     ]
-  },
-  "model": "opus"
+  }
 }
