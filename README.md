@@ -148,23 +148,14 @@ cat ~/.claude-docker/ssh/id_rsa.pub
 ssh -T git@github.com -i ~/.claude-docker/ssh/id_rsa
 ```
 
-**Why separate SSH keys?**
-- ✅ Security isolation - Claude can't access your personal SSH keys
-- ✅ Easy revocation - Delete `~/.claude-docker/ssh/` to instantly revoke access
-- ✅ Clean audit trail - All Claude SSH activity is isolated and traceable
+### Custom Agent Behavior
 
-### Custom Agent Behavior (CLAUDE.md)
+After installation, customize Claude's behavior by editing files in `~/.claude-docker/claude-home/`:
 
-After installation, customize Claude's behavior by editing:
+#### CLAUDE.md (Prompt Engineering)
 ```bash
 nano ~/.claude-docker/claude-home/CLAUDE.md
 ```
-
-This directory is mounted as `~/.claude` inside the container, so you can customize:
-- Agent instructions and protocols
-- Slash commands (`.claude/commands/`)
-- Agent personas (`.claude/agents/`)
-- All standard Claude Code customizations
 
 **Important:** The default `CLAUDE.md` includes the author's opinionated workflow preferences:
 - Automatic codebase indexing on startup
@@ -175,13 +166,29 @@ This directory is mounted as `~/.claude` inside the container, so you can custom
 
 These are NOT requirements of the Docker container - they're customizable prompt engineering. Change `CLAUDE.md` to match your workflow preferences.
 
+#### settings.json (Claude Code Settings)
+```bash
+nano ~/.claude-docker/claude-home/settings.json
+```
+
+Configure Claude Code settings including:
+- **Timeouts:** Bash command execution timeouts (default: 24 hours)
+- **MCP Timeout:** MCP server response timeout (default: 60 seconds)
+- **Permissions:** Auto-approved commands (ls, grep, find, etc.)
+
+#### Other Customizations
+This directory is mounted as `~/.claude` inside the container, so you can also customize:
+- Slash commands (`.claude/commands/`)
+- Agent personas (`.claude/agents/`)
+- All standard Claude Code customizations
+
 ---
 
 ## Pre-configured MCP Servers
 
 MCP (Model Context Protocol) servers extend Claude's capabilities. Installation is simple - just add commands to `mcp-servers.txt` that you'd normally run in terminal.
 
-### Included MCP Servers that I find useful.
+### Included MCP Servers
 
 #### Serena MCP
 Semantic code navigation and symbol manipulation with automatic project indexing.
@@ -191,7 +198,9 @@ Semantic code navigation and symbol manipulation with automatic project indexing
 #### Context7 MCP
 Official, version-specific documentation straight from the source.
 
-**Value:** Unhobble Claude Code by giving it up-to-date docs. Stale documentation is an artifical performance bottleneck.
+**Value:** Unhobble Claude Code by giving it up-to-date docs. Stale documentation is an artificial performance bottleneck.
+
+**Setup:** Create a free API key at [context7.com/dashboard](https://context7.com/dashboard) and add it to your `.env` file as `CONTEXT7_API_KEY`.
 
 #### Grep MCP
 Search real code examples on GitHub.
@@ -203,28 +212,39 @@ SMS notifications when tasks complete - step away from your monitor.
 
 **Value:** Work on long-running tasks without staying at your computer. Get notified when Claude needs your attention.
 
-#### Zen MCP
-Call multiple models in plain English for agentic code review and debugging.
+### Optional MCP Servers
 
-**Value:** Different LLMs debating each other normally outperforms any single LLM. A different flavor of model ensembling, which is a known way to get performance boosts. Zen supports conversation threading so your CLI can discuss ideas with multiple AI models, exchange reasoning, get second opinions, and run collaborative debates between models to reach deeper insights and better solutions.
+These servers are pre-configured but commented out in `mcp-servers.txt` to keep the default setup lean. Uncomment to enable.
 
-**Requirements:** OpenRouter API key or other model provider API keys in `.env`
+#### Zen MCP (Disabled by Default)
+Multi-model code review and debugging using Gemini and other LLMs via OpenRouter.
+
+**Value:** Different LLMs debating each other normally outperforms any single LLM. Zen supports conversation threading for collaborative AI discussions, second opinions, and model debates.
+
+**Why disabled by default:** Each Zen tool adds significant tokens to context. For focused agentic coding, this overhead isn't worth it. Enable for "vibe coding" sessions where you want AI model collaboration.
+
+**To enable:**
+1. Uncomment the Zen MCP line in `mcp-servers.txt`
+2. Add `OPENROUTER_API_KEY` to your `.env` file (get one at [openrouter.ai](https://openrouter.ai))
+3. Rebuild: `claude-docker --rebuild`
+
+**Important:** Only enable the tools you need - each tool is expensive in terms of context tokens. See the [Zen MCP tools documentation](https://github.com/BeehiveInnovations/zen-mcp-server/tree/main/tools) for available tools and the [.env.example](https://github.com/BeehiveInnovations/zen-mcp-server/blob/main/.env.example) for all supported environment variables.
 
 ### MCP Installation
 
 Example `mcp-servers.txt`:
 ```bash
 # Serena - Coding agent toolkit
-claude mcp add -s user serena -- uvx --from git+https://github.com/oraios/serena serena-mcp-server --context ide-assistant
+claude mcp add-json "serena" '{"command":"bash","args":[...]}'
 
-# Context7 - Documentation lookup
-claude mcp add -s user --transport sse context7 https://mcp.context7.com/sse
+# Context7 - Documentation lookup (requires API key in .env)
+claude mcp add -s user --transport http context7 https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}"
 
-# Twilio SMS - Send notifications
-claude mcp add-json twilio -s user "{\"command\":\"npx\",\"args\":[\"-y\",\"@yiyang.1i/sms-mcp-server\"],\"env\":{\"ACCOUNT_SID\":\"${TWILIO_ACCOUNT_SID}\",\"AUTH_TOKEN\":\"${TWILIO_AUTH_TOKEN}\",\"FROM_NUMBER\":\"${TWILIO_FROM_NUMBER}\"}}"
-
-# Grep - GitHub code search
+# Grep - GitHub code search (no API key needed)
 claude mcp add -s user --transport http grep https://mcp.grep.app
+
+# Twilio SMS - Send notifications (requires Twilio credentials in .env)
+claude mcp add-json twilio -s user '{"command":"npx","args":["-y","@yiyang.1i/sms-mcp-server"],"env":{...}}'
 ```
 
 Each line is exactly what you'd type in your terminal to run that MCP server. The installation script handles the rest.

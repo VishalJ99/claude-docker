@@ -1,7 +1,7 @@
 # ABOUTME: Docker image for Claude Code with Twilio MCP server
 # ABOUTME: Provides autonomous Claude Code environment with SMS notifications
 
-FROM node:20-slim
+FROM node:20.18.1-slim
 
 # delete default node user if exists
 # we will likely need his UID
@@ -15,10 +15,8 @@ RUN apt-get update && apt-get install -y \
     python3 \
     build-essential \
     sudo \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
-
-# Install uv (Astral) for Serena MCP (todo make this modular.)
-# Note: Will be installed for claude-user after user creation
 
 # Install additional system packages if specified
 ARG SYSTEM_PACKAGES=""
@@ -90,12 +88,12 @@ USER claude-user
 # Set HOME immediately after switching user
 ENV HOME=/home/claude-user
 
-# Install uv (Astral) for claude-user
+# Install uv (Astral) for claude-user for Serena MCP (todo make this modular.)
+# Note: Will be installed for claude-user after user creation
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Add claude-user's local bin and scripts to PATH and PYTHONPATH
-ENV PATH="/home/claude-user/scripts:/home/claude-user/.local/bin:${PATH}"
-ENV PYTHONPATH="/home/claude-user/scripts:${PYTHONPATH}"
+# Add claude-user's local bin to PATH
+ENV PATH="/home/claude-user/.local/bin:${PATH}"
 
 # Install MCP servers from configuration file
 RUN /app/install-mcp-servers.sh
