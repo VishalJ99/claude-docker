@@ -123,8 +123,6 @@ SYSTEM_PACKAGES="libopenslide0 libgdal-dev"
 ```
 **Note:** Adding system packages requires rebuilding the image with `claude-docker --rebuild`.
 
-⚠️ **Security Note**: Credentials are baked into the Docker image during build. Keep your image secure!
-
 ### Git & SSH Configuration
 
 #### Git Credentials
