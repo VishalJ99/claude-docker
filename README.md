@@ -1,6 +1,6 @@
 # Claude Docker
 
-Complete AI coding agent starter pack with Claude Code in Docker - pre-configured MCP servers, persistent authentication, and autonomous development capabilities.
+Containerized drop-in replacement for Claude Code - run worry-free in `--dangerously-skip-permissions` mode with complete isolation. Pre-configured MCP servers, host GPU access, conda environment mounting, and modular plugin system for effortless customization.
 
 ---
 
