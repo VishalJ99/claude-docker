@@ -80,12 +80,3 @@ THESE RULES ARE ABSOLUTE AND APPLY AT ALL TIMES.
 
 **Search Real Code** - 
 `searchGitHub` - Search actual use cases on GitHub 
-
-**Writing Specification Documentation Tools** - 
-Use `specs-workflow` when writing requirements and design documents:
-
-**Check Progress**: `action.type="check"`
-
-**Initialize**: `action.type="init"`
-
-**Update Tasks**: `action.type="complete_task"` Path: `/docs/specs/*` 
