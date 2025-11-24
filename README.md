@@ -176,6 +176,12 @@ Configure Claude Code settings including:
 - **MCP Timeout:** MCP server response timeout (default: 60 seconds)
 - **Permissions:** Auto-approved commands (ls, grep, find, etc.)
 
+**Recommended:** Disable auto compact to gain 30% extra usable context window:
+```bash
+/config auto compact set to false
+```
+Run this command inside Claude Code to disable automatic context compaction.
+
 #### Other Customizations
 This directory is mounted as `~/.claude` inside the container, so you can also customize:
 - Slash commands (`.claude/commands/`)
