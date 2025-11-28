@@ -279,4 +279,4 @@ echo "Starting Claude Code in Docker..."
     -e CLAUDE_CONTINUE_FLAG="$CONTINUE_FLAG" \
     --workdir /workspace \
     --name "claude-docker-$(basename "$CURRENT_DIR")-$$" \
-    claude-docker:latest "${ARGS[@]}"
+    claude-docker:latest ${ARGS[@]+"${ARGS[@]}"}
