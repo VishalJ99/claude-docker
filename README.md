@@ -48,6 +48,7 @@ claude-docker --rebuild             # Force rebuild Docker image
 claude-docker --rebuild --no-cache  # Rebuild without using cache
 claude-docker --memory 8g           # Set container memory limit
 claude-docker --gpus all            # Enable GPU access (requires nvidia-docker)
+claude-docker --cc-version 2.0.64   # Install specific Claude Code version
 ```
 
 ### Available Flags
@@ -60,6 +61,7 @@ claude-docker --gpus all            # Enable GPU access (requires nvidia-docker)
 | `--no-cache` | When rebuilding, don't use Docker cache | `claude-docker --rebuild --no-cache` |
 | `--memory` | Set container memory limit | `claude-docker --memory 8g` |
 | `--gpus` | Enable GPU access | `claude-docker --gpus all` |
+| `--cc-version` | Install specific Claude Code version (requires rebuild) | `claude-docker --rebuild --cc-version 2.0.64` |
 
 ### Environment Variable Defaults
 Set defaults in your `.env` file:
@@ -78,6 +80,12 @@ claude-docker --rebuild
 
 # Use GPU for ML tasks
 claude-docker --gpus all
+
+# Rollback to specific Claude Code version
+claude-docker --rebuild --cc-version 2.0.64
+
+# Install latest version after rollback
+claude-docker --rebuild
 ```
 
 ---

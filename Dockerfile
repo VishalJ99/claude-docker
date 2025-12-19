@@ -45,8 +45,15 @@ RUN if getent group $USER_GID > /dev/null 2>&1; then \
 # Create app directory
 WORKDIR /app
 
-# Install Claude Code globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install Claude Code globally (optionally a specific version)
+ARG CC_VERSION=""
+RUN if [ -n "$CC_VERSION" ]; then \
+        echo "Installing Claude Code version: $CC_VERSION" && \
+        npm install -g @anthropic-ai/claude-code@$CC_VERSION; \
+    else \
+        echo "Installing latest Claude Code" && \
+        npm install -g @anthropic-ai/claude-code; \
+    fi
 
 # Ensure npm global bin is in PATH
 ENV PATH="/usr/local/bin:${PATH}"

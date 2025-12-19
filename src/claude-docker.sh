@@ -11,6 +11,7 @@ FORCE_REBUILD=false
 CONTINUE_FLAG=""
 MEMORY_LIMIT=""
 GPU_ACCESS=""
+CC_VERSION=""
 ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -37,6 +38,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --gpus)
             GPU_ACCESS="$2"
+            shift 2
+            ;;
+        --cc-version)
+            CC_VERSION="$2"
             shift 2
             ;;
         *)
@@ -129,7 +134,11 @@ if [ "$NEED_REBUILD" = true ]; then
         echo "✓ Building with additional system packages: $SYSTEM_PACKAGES"
         BUILD_ARGS="$BUILD_ARGS --build-arg SYSTEM_PACKAGES=\"$SYSTEM_PACKAGES\""
     fi
-    
+    if [ -n "${CC_VERSION:-}" ]; then
+        echo "✓ Building with Claude Code version: $CC_VERSION"
+        BUILD_ARGS="$BUILD_ARGS --build-arg CC_VERSION=\"$CC_VERSION\""
+    fi
+
     eval "'$DOCKER' build $NO_CACHE $BUILD_ARGS -t claude-docker:latest \"$PROJECT_ROOT\""
     
     # Clean up copied auth files
