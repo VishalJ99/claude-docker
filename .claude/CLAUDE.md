@@ -11,19 +11,18 @@ THESE RULES ARE ABSOLUTE AND APPLY AT ALL TIMES.
 - **MANDATORY CLARIFICATION**: If the user's prompt contains ANY vagueness or insufficient detail related to the goal being implied, you MUST ask clarifying questions before proceeding.
 
 ### 3A. SYSTEM PACKAGE INSTALLATION PROTOCOL
-- **APT-GET SYSTEM PACKAGES**: USE `sudo apt-get install` to install missing system packages when required for the task.
+- **APT-GET SYSTEM PACKAGES**: USE `sudo apt-get install` to install missing system packages when required for the task. You must create a `missing_packages.txt` file in the project `.claude` dir if this is required, create a `.claude` dir if one does not already exist at the project level.
 
 ### 3B. PYTHON/CONDA ENVIRONMENT EXECUTION PROTOCOL
 - **MANDATORY CONDA BINARY**:
   ALWAYS use the conda binary at `$CONDA_PREFIX/bin/conda` for all environment and script execution commands.
 
 - **SCRIPT EXECUTION FORMAT**:
-  ALWAYS follow these steps for Python script execution:
+  ALWAYS follow these steps for PYTHON script execution:
   
   1. **First, list conda environments to get Python binary paths**:
   ```bash
   ${CONDA_EXE:-conda} env list
-  /vol/biomedic3/vj724/miniconda3/bin/conda env list
   ```
   
   2. **Then execute Python scripts using the direct binary path**:
@@ -33,8 +32,15 @@ THESE RULES ARE ABSOLUTE AND APPLY AT ALL TIMES.
   - Replace `/path/to/environment/bin/python` with the actual Python binary path from step 1.
   - Replace `your_script.py [args]` with the script and its arguments.
 
+### 3C. PATH USAGE PROTOCOL
+- **MANDATORY RELATIVE PATHS**: ALL scripts MUST use relative paths, NEVER absolute paths.
+- **ABSOLUTE PATH PROHIBITION**: 
+  - **NEVER** hardcode `/workspace` or any other absolute path in scripts.
+  - **NEVER** use absolute paths like `/data2/vj724/claude-docker/...` or `/workspace/...` in script code.
+- **EXCEPTIONS**: Only system binaries and environment-specific paths (like conda Python binaries) may use absolute paths, but never project-specific paths.
+
 ### 4. CODEBASE CONTEXT MAINTENANCE PROTOCOL
-- All scripts MUST use the `argparse` module for command-line argument handling. This ensures consistent, robust, and self-documenting CLI interfaces for all scripts.
+- All PYTHON scripts MUST use the `argparse` module for command-line argument handling. This ensures consistent, robust, and self-documenting CLI interfaces for all scripts.
 - **MANDATORY CONTEXT.MD MAINTENANCE**: The `context.md` file MUST be maintained and updated by EVERY agent working on the codebase.
 - **PURPOSE**: `context.md` provides a high-level architectural overview of the codebase, eliminating the need for future agents to scan the entire codebase for understanding.
 - **CONTENT REQUIREMENTS**: `context.md` MUST contain:
@@ -43,7 +49,7 @@ THESE RULES ARE ABSOLUTE AND APPLY AT ALL TIMES.
   - **DEPENDENCIES**: Key dependencies between modules and external libraries
   - **ENTRY POINTS**: Main execution entry points and their purposes
   - **CONFIGURATION**: How configuration is managed across the system
-  - **CORE LOGIC**: Summary of the core business logic each module handles
+  - **CORE LOGIC**: Summary of the core logic each module handles
 - **UPDATE FREQUENCY**: 
   - **IMMEDIATE**: Update `context.md` whenever new modules are created
   - **AFTER LOGIC CHANGES**: Update whenever core logic in existing modules is modified
@@ -80,12 +86,3 @@ THESE RULES ARE ABSOLUTE AND APPLY AT ALL TIMES.
 
 **Search Real Code** - 
 `searchGitHub` - Search actual use cases on GitHub 
-
-**Writing Specification Documentation Tools** - 
-Use `specs-workflow` when writing requirements and design documents:
-
-**Check Progress**: `action.type="check"`
-
-**Initialize**: `action.type="init"`
-
-**Update Tasks**: `action.type="complete_task"` Path: `/docs/specs/*` 
