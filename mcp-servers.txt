@@ -1,26 +1,31 @@
-# MCP Server Configuration File
-# Each line should contain a complete claude mcp add or claude mcp add-json command
-# Use ${VAR_NAME} for environment variable substitution
-# Lines starting with # are comments and will be ignored
-
-# Serena - Coding agent toolkit
-claude mcp add -s user serena -- uvx --from git+https://github.com/oraios/serena serena-mcp-server --context ide-assistant
-
-# Context7 - Up-to-date documentation and code examples from source
-claude mcp add -s user --transport sse context7 https://mcp.context7.com/sse
-
-# Twilio SMS - Send SMS messages (requires env vars)
-# Will only install if TWILIO_* env vars are set in .env
-claude mcp add-json twilio -s user "{\"command\":\"npx\",\"args\":[\"-y\",\"@yiyang.1i/sms-mcp-server\"],\"env\":{\"ACCOUNT_SID\":\"${TWILIO_ACCOUNT_SID}\",\"AUTH_TOKEN\":\"${TWILIO_AUTH_TOKEN}\",\"FROM_NUMBER\":\"${TWILIO_FROM_NUMBER}\"}}"
-
-# Grep for github searching
-claude mcp add -s user --transport http grep https://mcp.grep.app
-
-# Spec workflow
-claude mcp add spec-workflow-mcp -s user -- npx -y spec-workflow-mcp@latest
-
 # Add more MCP servers below as needed
 # Example formats:
 # claude mcp add <name> -- <command> <args>
 # claude mcp add-json <name> -s user '{"command":"...","args":[...],"env":{...}}'
 
+# Serena - Coding agent toolkit
+claude mcp add-json "serena" '{
+  "command":"bash",
+  "args":["-c","for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/oraios/serena serena-agent; done; echo '\''uvx not found'\'' >&2; exit 1"],
+  "env":{"PATH":"/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:~/.local/bin"},
+  "timeout": 60000
+}' 
+
+# Context7 - Up-to-date documentation and code examples from source
+claude mcp add -s user --transport http context7 https://mcp.context7.com/mcp --header "CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}"
+
+# Twilio SMS - Send SMS messages (requires env vars)
+claude mcp add-json twilio -s user "{\"command\":\"npx\",\"args\":[\"-y\",\"@yiyang.1i/sms-mcp-server\"],\"env\":{\"ACCOUNT_SID\":\"${TWILIO_ACCOUNT_SID}\",\"AUTH_TOKEN\":\"${TWILIO_AUTH_TOKEN}\",\"FROM_NUMBER\":\"${TWILIO_FROM_NUMBER}\"}}"
+
+# Grep for github searching
+claude mcp add -s user --transport http grep https://mcp.grep.app
+
+# === OPTIONAL MCP SERVERS (uncomment to enable) ===
+
+# Zen MCP - Multi-model code review/debugging with Gemini and other LLMs
+# Why disabled: Each tool adds significant tokens to context. Best for "vibe coding" sessions.
+# Requirements: OPENROUTER_API_KEY in .env (get one at https://openrouter.ai)
+# Important: Only enable tools you need - see https://github.com/BeehiveInnovations/zen-mcp-server/tree/main/tools
+# Full env var options: https://github.com/BeehiveInnovations/zen-mcp-server/blob/main/.env.example
+
+# claude mcp add-json "zen" -s user '{"command":"bash","args":["-c","for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/BeehiveInnovations/zen-mcp-server.git zen-mcp-server; done; echo '\''uvx not found'\'' >&2; exit 1"],"env":{"PATH":"/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:~/.local/bin","DISABLED_TOOLS":"apilookup,challenge,chat,clink,consensus,docgen,planner,precommit,refactor,secaudit,testgen,thinkdeep,tracer,version","DEFAULT_MODEL":"auto"}}'

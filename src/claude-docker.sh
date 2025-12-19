@@ -1,8 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+trap 'echo "$0: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 # ABOUTME: Wrapper script to run Claude Code in Docker container
 # ABOUTME: Handles project mounting, .claude setup, and environment variables
 
 # Parse command line arguments
+DOCKER="${DOCKER:-docker}"
 NO_CACHE=""
 FORCE_REBUILD=false
 CONTINUE_FLAG=""
@@ -12,6 +15,10 @@ ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --podman)
+            DOCKER=podman
+            shift
+            ;;
         --no-cache)
             NO_CACHE="--no-cache"
             shift
@@ -75,12 +82,12 @@ else
 fi
 
 # Use environment variables as defaults if command line args not provided
-if [ -z "$MEMORY_LIMIT" ] && [ -n "$DOCKER_MEMORY_LIMIT" ]; then
+if [ -z "${MEMORY_LIMIT:-}" ] && [ -n "${DOCKER_MEMORY_LIMIT:-}" ]; then
     MEMORY_LIMIT="$DOCKER_MEMORY_LIMIT"
     echo "✓ Using memory limit from environment: $MEMORY_LIMIT"
 fi
 
-if [ -z "$GPU_ACCESS" ] && [ -n "$DOCKER_GPU_ACCESS" ]; then
+if [ -z "${GPU_ACCESS:-}" ] && [ -n "${DOCKER_GPU_ACCESS:-}" ]; then
     GPU_ACCESS="$DOCKER_GPU_ACCESS"
     echo "✓ Using GPU access from environment: $GPU_ACCESS"
 fi
@@ -88,7 +95,7 @@ fi
 # Check if we need to rebuild the image
 NEED_REBUILD=false
 
-if ! docker images | grep -q "claude-docker"; then
+if ! "$DOCKER" images | grep -q "claude-docker"; then
     echo "Building Claude Docker image for first time..."
     NEED_REBUILD=true
 fi
@@ -99,7 +106,7 @@ if [ "$FORCE_REBUILD" = true ]; then
 fi
 
 # Warn if --no-cache is used without rebuild
-if [ -n "$NO_CACHE" ] && [ "$NEED_REBUILD" = false ]; then
+if [ -n "${NO_CACHE:-}" ] && [ "$NEED_REBUILD" = false ]; then
     echo "⚠️  Warning: --no-cache flag set but image already exists. Use --rebuild --no-cache to force rebuild without cache."
 fi
 
@@ -115,15 +122,15 @@ if [ "$NEED_REBUILD" = true ]; then
     
     # Build docker command with conditional system packages and git config
     BUILD_ARGS="--build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g)"
-    if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then
+    if [ -n "${GIT_USER_NAME:-}" ] && [ -n "${GIT_USER_EMAIL:-}" ]; then
         BUILD_ARGS="$BUILD_ARGS --build-arg GIT_USER_NAME=\"$GIT_USER_NAME\" --build-arg GIT_USER_EMAIL=\"$GIT_USER_EMAIL\""
     fi
-    if [ -n "$SYSTEM_PACKAGES" ]; then
+    if [ -n "${SYSTEM_PACKAGES:-}" ]; then
         echo "✓ Building with additional system packages: $SYSTEM_PACKAGES"
         BUILD_ARGS="$BUILD_ARGS --build-arg SYSTEM_PACKAGES=\"$SYSTEM_PACKAGES\""
     fi
     
-    eval "docker build $NO_CACHE $BUILD_ARGS -t claude-docker:latest \"$PROJECT_ROOT\""
+    eval "'$DOCKER' build $NO_CACHE $BUILD_ARGS -t claude-docker:latest \"$PROJECT_ROOT\""
     
     # Clean up copied auth files
     rm -f "$PROJECT_ROOT/.claude.json"
@@ -190,15 +197,15 @@ ENV_ARGS=""
 DOCKER_OPTS=""
 
 # Add memory limit if specified
-if [ -n "$MEMORY_LIMIT" ]; then
+if [ -n "${MEMORY_LIMIT:-}" ]; then
     echo "✓ Setting memory limit: $MEMORY_LIMIT"
     DOCKER_OPTS="$DOCKER_OPTS --memory $MEMORY_LIMIT"
 fi
 
 # Add GPU access if specified
-if [ -n "$GPU_ACCESS" ]; then
+if [ -n "${GPU_ACCESS:-}" ]; then
     # Check if nvidia-docker2 or nvidia-container-runtime is available
-    if docker info 2>/dev/null | grep -q nvidia || which nvidia-docker >/dev/null 2>&1; then
+    if "$DOCKER" info 2>/dev/null | grep -q nvidia || which nvidia-docker >/dev/null 2>&1; then
         echo "✓ Enabling GPU access: $GPU_ACCESS"
         DOCKER_OPTS="$DOCKER_OPTS --gpus $GPU_ACCESS"
     else
@@ -209,7 +216,7 @@ if [ -n "$GPU_ACCESS" ]; then
 fi
 
 # Mount conda installation if specified
-if [ -n "$CONDA_PREFIX" ] && [ -d "$CONDA_PREFIX" ]; then
+if [ -n "${CONDA_PREFIX:-}" ] && [ -d "$CONDA_PREFIX" ]; then
     echo "✓ Mounting conda installation from $CONDA_PREFIX"
     MOUNT_ARGS="$MOUNT_ARGS -v $CONDA_PREFIX:$CONDA_PREFIX:ro"
     ENV_ARGS="$ENV_ARGS -e CONDA_PREFIX=$CONDA_PREFIX -e CONDA_EXE=$CONDA_PREFIX/bin/conda"
@@ -218,7 +225,7 @@ else
 fi
 
 # Mount additional conda directories if specified
-if [ -n "$CONDA_EXTRA_DIRS" ]; then
+if [ -n "${CONDA_EXTRA_DIRS:-}" ]; then
     echo "✓ Mounting additional conda directories..."
     CONDA_ENVS_PATHS=""
     CONDA_PKGS_PATHS=""
@@ -228,7 +235,7 @@ if [ -n "$CONDA_EXTRA_DIRS" ]; then
             MOUNT_ARGS="$MOUNT_ARGS -v $dir:$dir:ro"
             # Build comma-separated list for CONDA_ENVS_DIRS
             if [[ "$dir" == *"env"* ]]; then
-                if [ -z "$CONDA_ENVS_PATHS" ]; then
+                if [ -z "${CONDA_ENVS_PATHS:-}" ]; then
                     CONDA_ENVS_PATHS="$dir"
                 else
                     CONDA_ENVS_PATHS="$CONDA_ENVS_PATHS:$dir"
@@ -236,7 +243,7 @@ if [ -n "$CONDA_EXTRA_DIRS" ]; then
             fi
             # Build comma-separated list for CONDA_PKGS_DIRS
             if [[ "$dir" == *"pkg"* ]]; then
-                if [ -z "$CONDA_PKGS_PATHS" ]; then
+                if [ -z "${CONDA_PKGS_PATHS:-}" ]; then
                     CONDA_PKGS_PATHS="$dir"
                 else
                     CONDA_PKGS_PATHS="$CONDA_PKGS_PATHS:$dir"
@@ -247,12 +254,12 @@ if [ -n "$CONDA_EXTRA_DIRS" ]; then
         fi
     done
     # Set CONDA_ENVS_DIRS environment variable if we found env paths
-    if [ -n "$CONDA_ENVS_PATHS" ]; then
+    if [ -n "${CONDA_ENVS_PATHS:-}" ]; then
         ENV_ARGS="$ENV_ARGS -e CONDA_ENVS_DIRS=$CONDA_ENVS_PATHS"
         echo "  - Setting CONDA_ENVS_DIRS=$CONDA_ENVS_PATHS"
     fi
     # Set CONDA_PKGS_DIRS environment variable if we found pkg paths
-    if [ -n "$CONDA_PKGS_PATHS" ]; then
+    if [ -n "${CONDA_PKGS_PATHS:-}" ]; then
         ENV_ARGS="$ENV_ARGS -e CONDA_PKGS_DIRS=$CONDA_PKGS_PATHS"
         echo "  - Setting CONDA_PKGS_DIRS=$CONDA_PKGS_PATHS"
     fi
@@ -262,15 +269,14 @@ fi
 
 # Run Claude Code in Docker
 echo "Starting Claude Code in Docker..."
-docker run -it --rm \
+"$DOCKER" run -it --rm \
     $DOCKER_OPTS \
     -v "$CURRENT_DIR:/workspace" \
     -v "$HOME/.claude-docker/claude-home:/home/claude-user/.claude:rw" \
     -v "$HOME/.claude-docker/ssh:/home/claude-user/.ssh:rw" \
-    -v "$HOME/.claude-docker/scripts:/home/claude-user/scripts:rw" \
     $MOUNT_ARGS \
     $ENV_ARGS \
     -e CLAUDE_CONTINUE_FLAG="$CONTINUE_FLAG" \
     --workdir /workspace \
     --name "claude-docker-$(basename "$CURRENT_DIR")-$$" \
-    claude-docker:latest "${ARGS[@]}"
+    claude-docker:latest ${ARGS[@]+"${ARGS[@]}"}

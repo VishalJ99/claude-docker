@@ -1,10 +1,12 @@
 # ABOUTME: Docker image for Claude Code with Twilio MCP server
 # ABOUTME: Provides autonomous Claude Code environment with SMS notifications
 
-FROM ubuntu:22.04
+FROM node:20.18.1-slim
 
-# Set DEBIAN_FRONTEND to avoid interactive prompts during build
-ENV DEBIAN_FRONTEND=noninteractive
+# delete default node user if exists
+# we will likely need his UID
+RUN deluser node || true
+RUN delgroup node || true
 
 # Install Node.js and required system dependencies
 RUN apt-get update && apt-get install -y \
@@ -15,24 +17,8 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     build-essential \
     sudo \
-    ca-certificates \
-    gnupg \
-    lsb-release \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update \
-    && apt-get install -y nodejs \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
-
-# Set NVIDIA environment variables for GPU support
-# These are harmless when GPU is not available but enable GPU passthrough when --gpus flag is used
-ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
-
-# Install uv (Astral) for Serena MCP (todo make this modular.)
-# Note: Will be installed for claude-user after user creation
 
 # Install additional system packages if specified
 ARG SYSTEM_PACKAGES=""
@@ -61,7 +47,6 @@ WORKDIR /app
 
 # Install Claude Code globally
 RUN npm install -g @anthropic-ai/claude-code
-RUN npm install -g @railway/cli
 
 # Ensure npm global bin is in PATH
 ENV PATH="/usr/local/bin:${PATH}"
@@ -105,12 +90,12 @@ USER claude-user
 # Set HOME immediately after switching user
 ENV HOME=/home/claude-user
 
-# Install uv (Astral) for claude-user
+# Install uv (Astral) for claude-user for Serena MCP (todo make this modular.)
+# Note: Will be installed for claude-user after user creation
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Add claude-user's local bin and scripts to PATH and PYTHONPATH
-ENV PATH="/home/claude-user/scripts:/home/claude-user/.local/bin:${PATH}"
-ENV PYTHONPATH="/home/claude-user/scripts:${PYTHONPATH}"
+# Add claude-user's local bin to PATH
+ENV PATH="/home/claude-user/.local/bin:${PATH}"
 
 # Install MCP servers from configuration file
 RUN /app/install-mcp-servers.sh

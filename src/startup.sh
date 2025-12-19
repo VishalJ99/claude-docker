@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+trap 'echo "$0: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+
 # ABOUTME: Startup script for claude-docker container with MCP server
 # ABOUTME: Loads twilio env vars, checks for .credentials.json, copies CLAUDE.md template if no claude.md in claude-docker/claude-home.
 # ABOUTME: Starts claude code with permissions bypass and continues from last session.
