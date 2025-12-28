@@ -21,6 +21,16 @@ $ARGUMENTS
 
 If `docs/dictionary.md` and `docs/dictionary/` already exist, **update** them by adding new entries. Do not recreate or overwrite existing entries unless explicitly asked.
 
+## Initialisation: Ensure project CLAUDE.md Has Vocabulary Protocol
+
+Check if `.claude/CLAUDE.md` contains a "Shared Vocabulary Protocol" section.
+
+If **not present**:
+1. Read `~/.claude/commands/claude-vocab-section.md
+2. Append its contents to the project-level `CLAUDE.md`
+
+This ensures agents know how to use the dictionary at runtime.
+
 ## Objective
 
 Generate entries in `docs/dictionary.md` index file that serves as the canonical source of truth for domain-specific terminology in this project. The index is loaded at session start; full entries are read on-demand.
@@ -94,7 +104,7 @@ For EACH term, create a detailed entry in `docs/dictionary/[term-name].md`:
 
 <!-- KEYWORDS: commit, committed, locked, finalized, week, schedule, readonly, lock -->
 
-**Also known as:** Locked state, Finalized week
+**Aliases:** Locked state, Finalized week
 
 **Brief Definition:**  
 The state when a user has clicked "Commit to Week" and the schedule is locked.
@@ -163,114 +173,9 @@ graph TD
 
 ---
 
-## Step 4: Update CLAUDE.md (Critical)
-
-Add this section to `CLAUDE.md` to ensure agents always reference the dictionary:
-
-```markdown
-## ⚠️ Shared Vocabulary Protocol
-
-### Dictionary Location
-- **Index:** `docs/dictionary.md` — Load this at session start
-- **Full entries:** `docs/dictionary/[term].md` — Search on-demand
-
-### How to Reference
-
-1. Load `docs/dictionary.md` (the index) at session start
-2. When you encounter a term from the index, read its full entry in `docs/dictionary/`
-3. Use the dictionary definition—NOT your general knowledge
-4. If a term is missing, flag it and ask for clarification
-
-**Example workflow:**
-```
-User: "When the user is in a committed state, disable the editor"
-
-Agent thinks:
-- "committed state" → in index → read docs/dictionary/committed-state.md
-- "editor" → in index → read docs/dictionary/editor.md
-- Now I understand: disable block schedule UI when week is locked
-```
-
-### Do NOT:
-- ❌ Assume you know what a term means without checking
-- ❌ Skip the dictionary lookup because a term seems obvious
-
-### When Modifying Code
-
-If your changes affect files listed in any dictionary term's "Code Locations":
-1. Re-read that term's full entry
-2. Verify your changes align with the defined behavior
-3. Update the dictionary entry if behavior has changed
-
-### When You Encounter an Undefined Term
-
-If a term seems domain-specific but isn't in the dictionary:
-1. Flag it in your response: "⚠️ Term '[X]' not found in dictionary"
-2. Ask the user for a definition
-3. Suggest adding it to the dictionary
-
-### Maintenance Responsibility
-
-After ANY code change that:
-- Modifies a component/hook/store listed in a dictionary entry
-- Introduces a new domain concept
-- Changes the behavior of an existing concept
-
-You MUST update `docs/dictionary.md` accordingly.
-```
-
----
-
 ## Deliverables Checklist
 
-- [ ] `docs/dictionary.md` - Searchable vocabulary index + full entries
+- [ ] `docs/dictionary.md` - Searchable vocabulary index
 - [ ] `docs/dictionary/[term].md` - Full entry for each term
-- [ ] Mermaid diagrams for each term's code flow
-- [ ] Updated `CLAUDE.md` with Shared Vocabulary Protocol
-- [ ] List of terms needing clarification
+- [ ] Mermaid call stack diagrams in each entry
 - [ ] Keyword tags for efficient searching
-
----
-
-## Summary: The Lookup Pattern
-
-```mermaid
-flowchart TD
-    A[Receive User Instruction] --> B[Scan for Domain-Specific Terms]
-    B --> C{Terms Found?}
-    C -->|Yes| D[Search docs/dictionary.md]
-    C -->|No| G[Proceed with Implementation]
-    D --> E{Term Defined?}
-    E -->|Yes| F[Use Dictionary Definition]
-    E -->|No| H[Flag Missing Term & Ask User]
-    F --> G
-    H --> I[User Provides Definition]
-    I --> J[Add to Dictionary]
-    J --> G
-    G --> K[Implement Solution]
-    K --> L{Modified Code in Dictionary Entry?}
-    L -->|Yes| M[Update Dictionary Entry]
-    L -->|No| N[Complete]
-    M --> N
-```
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant A as Agent
-    participant C as CLAUDE.md
-    participant D as docs/dictionary.md
-
-    U->>A: "When user is in committed state, disable the editor"
-    A->>C: Read project instructions
-    C-->>A: Dictionary exists at docs/dictionary.md. Search before assuming.
-    A->>A: Identify domain terms: "committed state", "editor"
-    A->>D: Search "committed state"
-    D-->>A: Definition: Week locked after user confirms
-    A->>D: Search "editor"
-    D-->>A: Definition: UI for block schedules per bundle/day
-    A->>A: Resolved: Disable BlockScheduleEditor when scheduleStore.committed === true
-    A->>U: Implementation complete
-```
-
-This pattern keeps context lean while ensuring vocabulary alignment.
