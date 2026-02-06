@@ -35,6 +35,10 @@ claude-docker
 
 **That's it!** Claude runs in an isolated Docker container with access to your project directory.
 
+Installer notes:
+- Alias is added to your detected shell RC file (`.bashrc`, `.bash_profile`, `.zshrc`, or `.profile`)
+- Persistent data defaults to `~/.claude-docker`; override with `CLAUDE_DOCKER_HOME=/path/to/writable/dir`
+
 ---
 
 ## Command Line Reference
@@ -68,6 +72,11 @@ Set defaults in your `.env` file:
 ```bash
 DOCKER_MEMORY_LIMIT=8g          # Default memory limit
 DOCKER_GPU_ACCESS=all           # Default GPU access
+```
+
+Set this in your shell if you want to override the default persistent directory:
+```bash
+export CLAUDE_DOCKER_HOME=/path/to/writable/dir
 ```
 
 ### Examples
@@ -143,24 +152,25 @@ Claude Docker uses dedicated SSH keys (separate from your personal keys for secu
 
 ```bash
 # 1. Create directory and generate key
-mkdir -p ~/.claude-docker/ssh
-ssh-keygen -t rsa -b 4096 -f ~/.claude-docker/ssh/id_rsa -N ''
+CLAUDE_DOCKER_DIR="${CLAUDE_DOCKER_HOME:-$HOME/.claude-docker}"
+mkdir -p "$CLAUDE_DOCKER_DIR/ssh"
+ssh-keygen -t rsa -b 4096 -f "$CLAUDE_DOCKER_DIR/ssh/id_rsa" -N ''
 
 # 2. Add public key to GitHub
-cat ~/.claude-docker/ssh/id_rsa.pub
+cat "$CLAUDE_DOCKER_DIR/ssh/id_rsa.pub"
 # Copy output and add to: GitHub → Settings → SSH and GPG keys → New SSH key
 
 # 3. Test connection
-ssh -T git@github.com -i ~/.claude-docker/ssh/id_rsa
+ssh -T git@github.com -i "$CLAUDE_DOCKER_DIR/ssh/id_rsa"
 ```
 
 ### Custom Agent Behavior
 
-After installation, customize Claude's behavior by editing files in `~/.claude-docker/claude-home/`:
+After installation, customize Claude's behavior by editing files in `${CLAUDE_DOCKER_HOME:-~/.claude-docker}/claude-home/`:
 
 #### CLAUDE.md (Prompt Engineering)
 ```bash
-nano ~/.claude-docker/claude-home/CLAUDE.md
+nano "${CLAUDE_DOCKER_HOME:-$HOME/.claude-docker}/claude-home/CLAUDE.md"
 ```
 
 **Important:** The default `CLAUDE.md` includes the author's opinionated workflow preferences:
@@ -174,7 +184,7 @@ These are NOT requirements of the Docker container - they're customizable prompt
 
 #### settings.json (Claude Code Settings)
 ```bash
-nano ~/.claude-docker/claude-home/settings.json
+nano "${CLAUDE_DOCKER_HOME:-$HOME/.claude-docker}/claude-home/settings.json"
 ```
 
 Configure Claude Code settings including:
@@ -273,7 +283,7 @@ Each line is exactly what you'd type in your terminal to run that MCP server. Th
 - **Persistent conversation history** - Resumes from where you left off with `--continue`, even after crashes
 - **Host machines conda envs** - No need to waste time re setting up conda environments, host machines conda dirs are mounted and ready to use by claude docker.
 - **Simple one-command setup** - Zero friction plug-and-play integration
-- **Fully customizable** - Modify files at `~/.claude-docker` for custom behavior
+- **Fully customizable** - Modify files at `${CLAUDE_DOCKER_HOME:-~/.claude-docker}` for custom behavior
 
 ---
 
@@ -301,7 +311,7 @@ claude-docker --rebuild --no-cache # For changes to take effect.
 ### 3. Customize Agent Behavior
 After installation, customize Claude's behavior:
 ```bash
-nano ~/.claude-docker/claude-home/CLAUDE.md
+nano "${CLAUDE_DOCKER_HOME:-$HOME/.claude-docker}/claude-home/CLAUDE.md"
 ```
 ---
 

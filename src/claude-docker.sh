@@ -2,7 +2,12 @@
 set -euo pipefail
 trap 'echo "$0: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 # ABOUTME: Wrapper script to run Claude Code in Docker container
-# ABOUTME: Handles project mounting, .claude setup, and environment variables
+# ABOUTME: Handles project mounting, persistent Claude config, and environment variables
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+source "$SCRIPT_DIR/lib-common.sh"
 
 # Parse command line arguments
 DOCKER="${DOCKER:-docker}"
@@ -51,26 +56,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Validate runtime and resolve persistent host directory before any build/run operations.
+check_container_runtime "$DOCKER" "1.44"
+resolve_claude_docker_dir
+
 # Get the absolute path of the current directory
 CURRENT_DIR=$(pwd)
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
-# Check if .claude directory exists in current project, create if not
-if [ ! -d "$CURRENT_DIR/.claude" ]; then
-    echo "Creating .claude directory for this project..."
-    mkdir -p "$CURRENT_DIR/.claude"
-    
-    # Copy template files
-    cp "$PROJECT_ROOT/.claude/CLAUDE.md" "$CURRENT_DIR/.claude/"
-    
-    # Create scratchpad.md if it doesn't exist
-    if [ ! -f "$CURRENT_DIR/scratchpad.md" ]; then
-        cp "$PROJECT_ROOT/.claude/scratchpad.md" "$CURRENT_DIR/"
-    fi
-    
-    echo "✓ Claude configuration created"
+HOST_HOME="${HOME:-}"
+if [ -z "$HOST_HOME" ]; then
+    HOST_HOME="$(get_home_for_uid "$(id -u)" || true)"
 fi
+
+CLAUDE_HOME_DIR="$CLAUDE_DOCKER_DIR/claude-home"
+SSH_DIR="$CLAUDE_DOCKER_DIR/ssh"
 
 # Check if .env exists in claude-docker directory for building
 ENV_FILE="$PROJECT_ROOT/.env"
@@ -117,8 +115,8 @@ fi
 
 if [ "$NEED_REBUILD" = true ]; then
     # Copy authentication files to build context
-    if [ -f "$HOME/.claude.json" ]; then
-        cp "$HOME/.claude.json" "$PROJECT_ROOT/.claude.json"
+    if [ -n "$HOST_HOME" ] && [ -f "$HOST_HOME/.claude.json" ]; then
+        cp "$HOST_HOME/.claude.json" "$PROJECT_ROOT/.claude.json"
     fi
     
     # Get git config from host
@@ -146,25 +144,25 @@ if [ "$NEED_REBUILD" = true ]; then
 fi
 
 # Ensure the claude-home and ssh directories exist
-mkdir -p "$HOME/.claude-docker/claude-home"
-mkdir -p "$HOME/.claude-docker/ssh"
+mkdir -p "$CLAUDE_HOME_DIR"
+mkdir -p "$SSH_DIR"
 
 # Copy authentication files to persistent claude-home if they don't exist
-if [ -f "$HOME/.claude/.credentials.json" ] && [ ! -f "$HOME/.claude-docker/claude-home/.credentials.json" ]; then
+if [ -n "$HOST_HOME" ] && [ -f "$HOST_HOME/.claude/.credentials.json" ] && [ ! -f "$CLAUDE_HOME_DIR/.credentials.json" ]; then
     echo "✓ Copying Claude authentication to persistent directory"
-    cp "$HOME/.claude/.credentials.json" "$HOME/.claude-docker/claude-home/.credentials.json"
+    cp "$HOST_HOME/.claude/.credentials.json" "$CLAUDE_HOME_DIR/.credentials.json"
 fi
 
 # Log information about persistent Claude home directory
 echo ""
-echo "📁 Claude persistent home directory: ~/.claude-docker/claude-home/"
+echo "📁 Claude persistent home directory: $CLAUDE_HOME_DIR/"
 echo "   This directory contains Claude's settings and CLAUDE.md instructions"
 echo "   Modify files here to customize Claude's behavior across all projects"
 echo ""
 
 # Check SSH key setup
-SSH_KEY_PATH="$HOME/.claude-docker/ssh/id_rsa"
-SSH_PUB_KEY_PATH="$HOME/.claude-docker/ssh/id_rsa.pub"
+SSH_KEY_PATH="$SSH_DIR/id_rsa"
+SSH_PUB_KEY_PATH="$SSH_DIR/id_rsa.pub"
 
 if [ ! -f "$SSH_KEY_PATH" ] || [ ! -f "$SSH_PUB_KEY_PATH" ]; then
     echo ""
@@ -172,14 +170,14 @@ if [ ! -f "$SSH_KEY_PATH" ] || [ ! -f "$SSH_PUB_KEY_PATH" ]; then
     echo "   To enable git push/pull in Claude Docker:"
     echo ""
     echo "   1. Generate SSH key:"
-    echo "      ssh-keygen -t rsa -b 4096 -f ~/.claude-docker/ssh/id_rsa -N ''"
+    echo "      ssh-keygen -t rsa -b 4096 -f $SSH_DIR/id_rsa -N ''"
     echo ""
     echo "   2. Add public key to GitHub:"
-    echo "      cat ~/.claude-docker/ssh/id_rsa.pub"
+    echo "      cat $SSH_DIR/id_rsa.pub"
     echo "      # Copy output and add to: GitHub → Settings → SSH Keys"
     echo ""
     echo "   3. Test connection:"
-    echo "      ssh -T git@github.com -i ~/.claude-docker/ssh/id_rsa"
+    echo "      ssh -T git@github.com -i $SSH_DIR/id_rsa"
     echo ""
     echo "   Claude will continue without SSH keys (read-only git operations only)"
     echo ""
@@ -187,7 +185,7 @@ else
     echo "✓ SSH keys found for git operations"
     
     # Create SSH config if it doesn't exist
-    SSH_CONFIG_PATH="$HOME/.claude-docker/ssh/config"
+    SSH_CONFIG_PATH="$SSH_DIR/config"
     if [ ! -f "$SSH_CONFIG_PATH" ]; then
         cat > "$SSH_CONFIG_PATH" << 'EOF'
 Host github.com
@@ -284,8 +282,8 @@ echo "Starting Claude Code in Docker..."
 "$DOCKER" run -it --rm \
     $DOCKER_OPTS \
     -v "$CURRENT_DIR:/workspace" \
-    -v "$HOME/.claude-docker/claude-home:/home/claude-user/.claude:rw" \
-    -v "$HOME/.claude-docker/ssh:/home/claude-user/.ssh:rw" \
+    -v "$CLAUDE_HOME_DIR:/home/claude-user/.claude:rw" \
+    -v "$SSH_DIR:/home/claude-user/.ssh:rw" \
     $MOUNT_ARGS \
     $ENV_ARGS \
     -e CLAUDE_CONTINUE_FLAG="$CONTINUE_FLAG" \

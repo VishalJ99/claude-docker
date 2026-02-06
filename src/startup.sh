@@ -45,7 +45,8 @@ if [ ! -f "$HOME/.claude/CLAUDE.md" ]; then
     echo "  Template copied to: $HOME/.claude/CLAUDE.md"
 else
     echo "✓ Using existing CLAUDE.md from $HOME/.claude/CLAUDE.md"
-    echo "  This maps to: ~/.claude-docker/claude-home/CLAUDE.md on your host"
+    echo "  This maps to your host persistent claude-home/CLAUDE.md"
+    echo "  Default host path: ~/.claude-docker/claude-home/CLAUDE.md"
     echo "  To reset to template, delete this file and restart"
 fi
 

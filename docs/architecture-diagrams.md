@@ -2,6 +2,8 @@
 
 This document contains Mermaid diagrams explaining the internals of each core script.
 
+Note: Diagrams use `~/.claude-docker` as the default host path. You can override this with `CLAUDE_DOCKER_HOME`.
+
 ---
 
 ## System Overview
@@ -79,9 +81,9 @@ flowchart TD
     WarnEdit --> CheckAlias
     SkipEnv --> CheckAlias
 
-    CheckAlias{"'claude-docker' alias<br/>in ~/.zshrc?"}
+    CheckAlias{"'claude-docker' alias<br/>in detected shell rc?"}
 
-    CheckAlias -->|No| AddAlias["Append alias to ~/.zshrc:<br/>alias claude-docker='...src/claude-docker.sh'"]
+    CheckAlias -->|No| AddAlias["Append alias to shell rc file:<br/>alias claude-docker='...src/claude-docker.sh'"]
     CheckAlias -->|Yes| SkipAlias["Skip alias creation"]
 
     AddAlias --> MakeExec
@@ -104,7 +106,7 @@ flowchart LR
     end
 
     subgraph Modified["Files Modified"]
-        E["~/.zshrc<br/>(alias added)"]
+        E["Detected shell rc file<br/>(alias added)"]
     end
 
     subgraph Read["Files Read"]
@@ -436,7 +438,7 @@ sequenceDiagram
     I->>I: Create ~/.claude-docker/
     I->>I: Copy templates
     I->>I: Setup .env
-    I->>I: Add alias to .zshrc
+    I->>I: Add alias to detected shell rc file
     I-->>U: Setup complete
 
     Note over U,C: Each Session
