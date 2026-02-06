@@ -224,6 +224,9 @@ if [ -n "${GPU_ACCESS:-}" ]; then
     fi
 fi
 
+# Enable host.docker.internal DNS so container can reach host services (e.g. vLLM on port 8000)
+DOCKER_OPTS="$DOCKER_OPTS --add-host=host.docker.internal:host-gateway"
+
 # Mount conda installation if specified
 if [ -n "${CONDA_PREFIX:-}" ] && [ -d "$CONDA_PREFIX" ]; then
     echo "✓ Mounting conda installation from $CONDA_PREFIX"
