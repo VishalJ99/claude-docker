@@ -26,6 +26,7 @@ data/
 *.tmp
 *.temp
 ~*
+.nfs*
 
 
 # Temporary working files
@@ -35,3 +36,6 @@ commit_diff_summary.txt
 
 # Serena MCP cache
 .serena/
+
+# Local Claude settings
+.claude/settings.local.json
